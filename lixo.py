@@ -68,13 +68,10 @@ zshift = -1.3024694919586182
 global_shift = np.array([xshift, yshift, zshift])
 det_shift = global_shift + np.array([0, 0, 0]) # additonal shift for detector for sanity check
 
-#3.59414 -192.883 1.31338
-
+# rotation if needed
 rotation=make_rotation_matrix(-np.pi*0/2., (1,0,0))
 
-#x_source = xshift #2.0836
-#y_source = -10.+yshift #1.5348
-#z_source = zshift #0.2
+# source position, shift w.r.t detector
 x_source = 0
 y_source = -92
 z_source = 0
@@ -108,10 +105,10 @@ tree.Branch('z_det', z, 'z_det[num]/F')
 tree.Branch('x_det', x, 'x_det[num]/F')
 tree.Branch('y_det', y, 'y_det[num]/F')
 tree.Branch('t_det', t, 't_det[num]/F')
-tree.Branch('numPhotons', p, 'numPhotons/I')
-tree.Branch('numDetected', d, 'numDetected/I')
-tree.Branch('genAngle',ar,'genAngle[num]/F')
-tree.Branch('detAngle',ad,'detAngle[num]/F')
+tree.Branch('n_gen', p, 'n_gen/I')
+tree.Branch('n_det', d, 'n_det/I')
+tree.Branch('theta_gen',ar,'theta_gen[num]/F')
+tree.Branch('theta_det',ad,'theta_det[num]/F')
 tree.Branch('nevt',evt,'nevt/I')
 tree.Branch('z_gen', zi, 'z_gen[num]/F')
 tree.Branch('x_gen', xi, 'x_gen[num]/F')
@@ -122,6 +119,7 @@ tree.Branch('pFlags',flags,'pFlags[num]/I')
 #Build the geomtry****************************************************************************************************************************
 
 #note: stl files correctly oriented, center at 0 0 0 
+# build detector. place parts, rotate if possible, assign materials
 for xx in range(0,len(allstls)):
     print 'index', xx, allstls[xx]
     meshes.append(mesh_from_stl(allstls[xx]))
@@ -145,18 +143,18 @@ for xx in range(0,len(allstls)):
         if 'filter' in allstls[xx]:
             solids.append(Solid(meshes[xx],sm.fullAbsorb,sm.Vac,surface=sm.teflonSurface,color=0x3365737e))
         elif 'copper' in allstls[xx]:
-            solids.append(Solid(meshes[xx],sm.fullAbsorb,sm.Vac,surface=sm.teflonSurface,color=0x3365737e))
+            solids.append(Solid(meshes[xx],sm.fullAbsorb,sm.Vac,surface=sm.copperSurface,color=0x3365737e))
         elif 'source_surface' in allstls[xx]:
             # photons coming out from this window
+            #solids.append(Solid(meshes[xx],sm.fullAbsorb,sm.Vac,surface=sm.genericSurface,color=0x3365737e))
             solids.append(Solid(meshes[xx],sm.fullAbsorb,sm.Vac,surface=sm.genericSurface,color=0x3365737e))
-            #Getting centers of the detector SiPM
             trianglecenters = meshes[xx].get_triangle_centers()
             xPos = np.mean(trianglecenters[:,0])
             yPos = np.mean(trianglecenters[:,1])
             zPos = np.mean(trianglecenters[:,2])
             scenters.append([xPos + xshift,yPos + yshift,zPos + zshift])
         else:
-            solids.append(Solid(meshes[xx],sm.fullAbsorb,sm.Vac,surface=sm.teflonSurface,color=0x3365737e))
+            solids.append(Solid(meshes[xx],sm.fullAbsorb,sm.Vac,surface=sm.genericSurface,color=0x3365737e))
 
         setup.add_solid(solids[xx],rotation=rotation, displacement=global_shift)
     
