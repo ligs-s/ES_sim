@@ -2,5 +2,5 @@ stls/copper_plate_bottom.stl
 stls/detector.stl
 #stls/filter.stl
 stls/source_flange.stl
-stls/source_surface.stl
+#stls/source_surface.stl
 #stls/teflon_sphere.stl

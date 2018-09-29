@@ -73,7 +73,7 @@ rotation=make_rotation_matrix(-np.pi*0/2., (1,0,0))
 
 # source position, shift w.r.t detector
 x_source = 0
-y_source = -92
+y_source = -120
 z_source = 0
 
 
@@ -174,7 +174,7 @@ norm_y_15 = np.array([0,-1.*np.cos(-15.*np.pi/180.),0])
 print "Mesh Imports Successful"
 
 setup.flatten()
-view (setup)
+#view (setup)
 setup.bvh = load_bvh(setup)
 sim = Simulation(setup, geant4_processes=0)
 
@@ -206,6 +206,24 @@ def pb_z_axis(n,wavelength,zStart,zEnd):
 		wavelengths = np.repeat(wavelength,n)
 		photons.append(Photons(pos,direction,pol,wavelengths))
 	return photons
+
+def photon_uniform_circle(n,wavelength, pos, radius, _dir=None):
+
+        rsq = np.random.uniform(0, radius*radius, n)
+	theta = np.random.uniform(0.,2.*np.pi,n)
+        
+        x = rsq*np.cos(theta)
+        z = rsq*np.sin(theta)
+        y = np.repeat(0, n)
+
+	pos = (np.vstack((x+x_source,y+y_source,z+z_source))).T
+
+	direction = uniform_sphere(n)
+        if not _dir==None:
+            direction = np.tile(_dir, (n, 1))
+	pol = np.cross(direction,uniform_sphere(n))
+	wavelengths = np.repeat(wavelength,n)
+	return Photons(pos,direction,pol,wavelengths)
 
 def photon_uniform_col(n,wavelength):
 	s = np.random.uniform(0,1,n)
@@ -249,11 +267,12 @@ def photon_uniform_muon(n,wavelength):
 evt[0]=0
 #numPhotons = 6000000 #90 MeV fragment, 15 eV per photon
 #numPhotons = 800000 #1.3 MeV*cm2/g, 3 g/cm3, 23.7 eV per photon, 5 cm, round off
-numPhotons = 10000
-photonsource = photon_bomb(numPhotons,178,(x_source,y_source,z_source))
+numPhotons = 1000000
+#photonsource = photon_bomb(numPhotons,178,(x_source,y_source,z_source))
+photonsource = photon_uniform_circle(numPhotons,178,(x_source,y_source,z_source), 10)
 #photonsource = pb_z_axis(numPhotons,178,z_source,0.5)
 #photonsource = photon_uniform_col(numPhotons,178)
-#photonsource = photon_gun(numPhotons,178,(x_source,y_source,z_source),(0,1,0))
+#photonsource = photon_gun(numPhotons,178,(x_source,y_source,z_source),norm_y)
 #photonsource = photon_uniform_muon(numPhotons,178)
 
 
