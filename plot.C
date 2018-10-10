@@ -12,12 +12,4 @@ void plot(){
     tree->Draw("track_length:r_gen", "", "colz");
 
 
-    
-
-
-    
-
-
-
-
 }

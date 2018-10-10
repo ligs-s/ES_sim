@@ -37,7 +37,7 @@ import sys
 
 print "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
 print
-print "LIXO"
+print "ES simulation"
 print
 setup = Detector(sm.Vac)
 
@@ -96,9 +96,19 @@ ti = array('f', maxn*[0])
 flags = array('i',maxn*[0])
 
 #Make TFiles and a  TTree
-iter = sys.argv[1]
-#file = TFile('brightSnout_darkRail_colWithBottom_col1mm_detWide_bothdet15_bothrspec60_bothrdif0_'+iter+'.root','recreate')
-file = TFile('test_'+iter+'.root','recreate')
+file = None
+if len(sys.argv)<=1:
+    file = TFile('test.root','recreate')
+elif len(sys.argv)==4:
+    source_type = sys.argv[1]
+    source_position = sys.argv[2]
+    sphere = sys.argv[3]
+    filename = 'data/stype_%s_spos_%s_sphere_%.root' % (source_type, source_position, sphere)
+    file = TFile()
+else:
+    print 'unknown argmuents, exit ...'
+    sys.exit(1)
+
 tree = TTree('tree', 'data from Photon events')
 tree.Branch('num',n,'num/I')
 tree.Branch('z_det', z, 'z_det[num]/F')
@@ -321,7 +331,7 @@ for ev in sim.simulate(photonsource, keep_photons_beg=True,keep_photons_end=True
 	p[0] = numPhotons
 	d[0] = numDetected
 
-	evt[0]=int(iter)
+	#evt[0]=int(iter)
 
 	tree.Fill()
 		
