@@ -33,9 +33,9 @@ genericSurface.set('reflect_diffuse',0.0)
 genericSurface.set('absorb', 1.)
 
 teflonSurface = Surface('teflonSurface')
-teflonSurface.set('absorb', 0.02)
-teflonSurface.set('reflect_diffuse', 0.0)
-teflonSurface.set('reflect_specular', 0.98)
+teflonSurface.set('absorb', 0.3)
+teflonSurface.set('reflect_diffuse', 0.65)
+teflonSurface.set('reflect_specular', 0.05)
 
 copperSurface = Surface('copperSurface')
 copperSurface.set('absorb', 0.3)

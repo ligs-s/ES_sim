@@ -35,11 +35,33 @@ from chroma.io.root import RootWriter
 
 import sys
 
-print "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
-print
+print "===================================="
 print "ES simulation"
-print
+print "===================================="
 setup = Detector(sm.Vac)
+
+#Make TFiles and a  TTree
+file = None
+source_type = None
+source_position = None
+sphere = None
+nphotons = None
+outdir = './data'
+if len(sys.argv)<=1:
+    file = TFile('test.root','recreate')
+elif len(sys.argv)<=6:
+    source_type = sys.argv[1]
+    source_position = sys.argv[2]
+    sphere = sys.argv[3]
+    if len(sys.argv)>=5:
+        nphotons = int(sys.argv[4])
+    if len(sys.argv)>=6:
+        outdir = sys.argv[5]
+    filename = '%s/stype_%s_spos_%s_sphere_%s.root' % (outdir, source_type, source_position, sphere)
+    file = TFile(filename, 'recreate')
+else:
+    print 'unknown argmuents, exit ...'
+    sys.exit(1)
 
 #Read in stl files from solid works
 allstls = []
@@ -48,6 +70,9 @@ with open('./fnames.txt') as f:
         line = line.strip()
         if line.startswith('#'):
             print 'skip parts', line
+            continue
+        if sphere!=None and not bool(int(sphere)) and line.find('sphere')>0:
+            print 'skip parts ', line, 'by user from cmd line arguments'
             continue
         allstls.append(line)
 
@@ -76,9 +101,12 @@ x_source = 0
 y_source = -120
 z_source = 0
 
+if not source_position==None:
+    y_source = int(source_position)
+
 
 #Values for tree - although int values, must be stored in array form b/c python
-maxn=10000
+maxn=100000
 z = array('f', maxn*[0])
 x = array('f', maxn*[0])
 y = array('f', maxn*[0])
@@ -95,19 +123,7 @@ yi = array('f', maxn*[0])
 ti = array('f', maxn*[0])
 flags = array('i',maxn*[0])
 
-#Make TFiles and a  TTree
-file = None
-if len(sys.argv)<=1:
-    file = TFile('test.root','recreate')
-elif len(sys.argv)==4:
-    source_type = sys.argv[1]
-    source_position = sys.argv[2]
-    sphere = sys.argv[3]
-    filename = 'data/stype_%s_spos_%s_sphere_%.root' % (source_type, source_position, sphere)
-    file = TFile()
-else:
-    print 'unknown argmuents, exit ...'
-    sys.exit(1)
+
 
 tree = TTree('tree', 'data from Photon events')
 tree.Branch('num',n,'num/I')
@@ -153,7 +169,8 @@ for xx in range(0,len(allstls)):
         if 'filter' in allstls[xx]:
             solids.append(Solid(meshes[xx],sm.fullAbsorb,sm.Vac,surface=sm.teflonSurface,color=0x3365737e))
         elif 'copper' in allstls[xx]:
-            solids.append(Solid(meshes[xx],sm.fullAbsorb,sm.Vac,surface=sm.copperSurface,color=0x3365737e))
+            #solids.append(Solid(meshes[xx],sm.fullAbsorb,sm.Vac,surface=sm.copperSurface,color=0x3365737e))
+            solids.append(Solid(meshes[xx],sm.fullAbsorb,sm.Vac,surface=sm.genericSurface,color=0x3365737e))
         elif 'source_surface' in allstls[xx]:
             # photons coming out from this window
             #solids.append(Solid(meshes[xx],sm.fullAbsorb,sm.Vac,surface=sm.genericSurface,color=0x3365737e))
@@ -168,8 +185,8 @@ for xx in range(0,len(allstls)):
 
         setup.add_solid(solids[xx],rotation=rotation, displacement=global_shift)
     
-print 'detector position: ', dcenters
-print 'source position: ', scenters
+print 'detector center position: ', dcenters
+print 'source window center position: ', scenters
 
 #rarr = np.array([rcenters[0][0],rcenters[0][1],rcenters[0][2]])
 #mag_r = np.sqrt(rarr.dot(rarr))
@@ -220,10 +237,11 @@ def pb_z_axis(n,wavelength,zStart,zEnd):
 def photon_uniform_circle(n,wavelength, pos, radius, _dir=None):
 
         rsq = np.random.uniform(0, radius*radius, n)
+        r = np.sqrt(rsq)
 	theta = np.random.uniform(0.,2.*np.pi,n)
         
-        x = rsq*np.cos(theta)
-        z = rsq*np.sin(theta)
+        x = r*np.cos(theta)
+        z = r*np.sin(theta)
         y = np.repeat(0, n)
 
 	pos = (np.vstack((x+x_source,y+y_source,z+z_source))).T
@@ -277,18 +295,28 @@ def photon_uniform_muon(n,wavelength):
 evt[0]=0
 #numPhotons = 6000000 #90 MeV fragment, 15 eV per photon
 #numPhotons = 800000 #1.3 MeV*cm2/g, 3 g/cm3, 23.7 eV per photon, 5 cm, round off
-numPhotons = 1000000
-#photonsource = photon_bomb(numPhotons,178,(x_source,y_source,z_source))
-photonsource = photon_uniform_circle(numPhotons,178,(x_source,y_source,z_source), 10)
+numPhotons = 10000
+if nphotons!=None:
+    numPhotons = nphotons
+photonsource = photon_uniform_circle(numPhotons,178,(x_source,y_source,z_source), 22)
 #photonsource = pb_z_axis(numPhotons,178,z_source,0.5)
 #photonsource = photon_uniform_col(numPhotons,178)
 #photonsource = photon_gun(numPhotons,178,(x_source,y_source,z_source),norm_y)
 #photonsource = photon_uniform_muon(numPhotons,178)
+radius = 5.8 if y_source<-110 else 22
+if source_type=='area_iso':
+    photonsource = photon_uniform_circle(numPhotons,178,(x_source,y_source,z_source), radius)
+if source_type=='area_norm':
+    photonsource = photon_uniform_circle(numPhotons,178,(x_source,y_source,z_source), radius, norm_y)
+if source_type=='point_iso':
+    photonsource = photon_bomb(numPhotons,178,(x_source,y_source,z_source))
+
 
 
 for ev in sim.simulate(photonsource, keep_photons_beg=True,keep_photons_end=True, run_daq=True,max_steps=500):
 	
 	detected = (ev.photons_end.flags & (0x1 << 2)).astype(bool)#Detection condition
+        #detected = np.ones(numPhotons, dtype=bool)
 	numDetected = len(ev.photons_end[detected])#Number of detected photons
 	print numPhotons
 	print numDetected
